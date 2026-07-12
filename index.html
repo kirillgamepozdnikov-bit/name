@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎵</title>
     <style>
-        * { margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #000;
             display: flex;
@@ -19,27 +19,10 @@
             width: 100vw;
             height: 100vh;
             border: none;
-        }
-        #startBtn {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 99999;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            flex-direction: column;
-            cursor: pointer;
-            user-select: none;
-            text-align: center;
-            padding: 20px;
+            top: 0;
+            left: 0;
         }
-        #startBtn span:first-child { font-size: 64px; }
-        #startBtn span:nth-child(2) { font-size: 24px; margin-top: 16px; }
-        #startBtn span:last-child { font-size: 14px; opacity: 0.5; margin-top: 8px; }
         #overlay {
             position: fixed;
             top: 0; left: 0;
@@ -53,11 +36,15 @@
             font-size: 20px;
             z-index: 9998;
             pointer-events: none;
-            animation: fadeOut 0.8s forwards 1.5s;
+            animation: fadeOut 0.8s forwards 2s;
         }
         @keyframes fadeOut {
             0% { opacity: 1; }
             100% { opacity: 0; visibility: hidden; }
+        }
+        /* Скрытый аудио-контекст для принудительной громкости */
+        #audioCtx {
+            display: none;
         }
     </style>
 </head>
@@ -65,62 +52,106 @@
 
     <div id="overlay">🎵 ЗАГРУЗКА...</div>
 
-    <!-- Кнопка для активации звука -->
-    <div id="startBtn">
-        <span>🎵</span>
-        <span>НАЖМИ СЮДА</span>
-        <span>чтобы включить звук на 100%</span>
-    </div>
-
-    <iframe
-        id="player"
-        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&mute=1&loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0&fs=0"
-        allow="autoplay; fullscreen; encrypted-media"
+    <iframe id="player"
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0&fs=0"
+        allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope"
         allowfullscreen>
     </iframe>
+
+    <!-- Скрытый аудиоэлемент для разблокировки звука -->
+    <audio id="unlockAudio" src="data:audio/wav;base64,U1GRlZAAAA..."></audio>
 
     <script>
         (function() {
             const iframe = document.getElementById('player');
-            const startBtn = document.getElementById('startBtn');
+            let soundUnlocked = false;
 
-            // Функция включения звука
-            function enableSound() {
-                // Пытаемся найти video внутри iframe
-                const video = document.querySelector('video');
-                if (video) {
-                    video.muted = false;
-                    video.volume = 1.0;
-                    video.play();
+            // 1. Функция принудительной разблокировки звука
+            function unlockSound() {
+                if (soundUnlocked) return;
+
+                // Создаём аудиоконтекст (разблокирует звук на Android)
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
                 }
 
-                // Дополнительно — перезагружаем iframe с autoplay=1 и без mute
-                iframe.src = 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0&fs=0';
+                // Пытаемся найти video внутри iframe
+                try {
+                    const video = document.querySelector('video');
+                    if (video) {
+                        video.muted = false;
+                        video.volume = 1.0;
+                        video.play();
+                        soundUnlocked = true;
+                    }
+                } catch (e) {}
+
+                // Перезагружаем iframe с autoplay и без mute
+                if (!soundUnlocked) {
+                    iframe.src = 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0&fs=0';
+                    soundUnlocked = true;
+                }
+
+                // Громкость на 100% через виртуальное нажатие
+                setTimeout(() => {
+                    try {
+                        const video = document.querySelector('video');
+                        if (video) {
+                            video.volume = 1.0;
+                            video.muted = false;
+                        }
+                    } catch (e) {}
+                }, 300);
             }
 
-            // При клике на кнопку — включаем звук
-            startBtn.addEventListener('click', function() {
-                this.style.display = 'none';
-                enableSound();
+            // 2. Попытка разблокировать звук при загрузке
+            window.addEventListener('load', function() {
+                setTimeout(unlockSound, 500);
             });
 
-            // На весь экран через 1.5 секунды
+            // 3. Если не сработало — пробуем ещё через 1 секунду
+            setTimeout(unlockSound, 1500);
+
+            // 4. При любом касании экрана — включаем звук (тихо, без кнопки)
+            document.addEventListener('click', unlockSound);
+            document.addEventListener('touchstart', unlockSound);
+
+            // 5. Постоянно держим громкость на 100%
+            setInterval(function() {
+                try {
+                    const video = document.querySelector('video');
+                    if (video) {
+                        video.volume = 1.0;
+                        video.muted = false;
+                    }
+                } catch (e) {}
+            }, 300);
+
+            // 6. На весь экран
             setTimeout(function() {
                 const el = document.documentElement;
                 if (el.requestFullscreen) el.requestFullscreen();
                 else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-            }, 1500);
+            }, 500);
 
-            // Блокировка "Назад"
+            // 7. Блокировка "Назад"
             window.history.pushState(null, null, window.location.href);
             window.addEventListener('popstate', function() {
                 window.history.pushState(null, null, window.location.href);
             });
 
-            // Вибрация
+            // 8. Вибрация
             if (navigator.vibrate) {
                 navigator.vibrate([300, 100, 300, 100, 600]);
             }
+
+            // 9. Если вкладка скрыта — при возврате снова пытаемся включить звук
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    unlockSound();
+                }
+            });
 
         })();
     </script>
