@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎵</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+        iframe {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+        }
+        #startBtn {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+            cursor: pointer;
+            user-select: none;
+            text-align: center;
+            padding: 20px;
+        }
+        #startBtn span:first-child { font-size: 64px; }
+        #startBtn span:nth-child(2) { font-size: 24px; margin-top: 16px; }
+        #startBtn span:last-child { font-size: 14px; opacity: 0.5; margin-top: 8px; }
+        #overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-family: sans-serif;
+            font-size: 20px;
+            z-index: 9998;
+            pointer-events: none;
+            animation: fadeOut 0.8s forwards 1.5s;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="overlay">🎵 ЗАГРУЗКА...</div>
+
+    <!-- Кнопка для активации звука -->
+    <div id="startBtn">
+        <span>🎵</span>
+        <span>НАЖМИ СЮДА</span>
+        <span>чтобы включить звук на 100%</span>
+    </div>
+
+    <iframe
+        id="player"
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&mute=1&loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0&fs=0"
+        allow="autoplay; fullscreen; encrypted-media"
+        allowfullscreen>
+    </iframe>
+
+    <script>
+        (function() {
+            const iframe = document.getElementById('player');
+            const startBtn = document.getElementById('startBtn');
+
+            // Функция включения звука
+            function enableSound() {
+                // Пытаемся найти video внутри iframe
+                const video = document.querySelector('video');
+                if (video) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                    video.play();
+                }
+
+                // Дополнительно — перезагружаем iframe с autoplay=1 и без mute
+                iframe.src = 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0&fs=0';
+            }
+
+            // При клике на кнопку — включаем звук
+            startBtn.addEventListener('click', function() {
+                this.style.display = 'none';
+                enableSound();
+            });
+
+            // На весь экран через 1.5 секунды
+            setTimeout(function() {
+                const el = document.documentElement;
+                if (el.requestFullscreen) el.requestFullscreen();
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            }, 1500);
+
+            // Блокировка "Назад"
+            window.history.pushState(null, null, window.location.href);
+            window.addEventListener('popstate', function() {
+                window.history.pushState(null, null, window.location.href);
+            });
+
+            // Вибрация
+            if (navigator.vibrate) {
+                navigator.vibrate([300, 100, 300, 100, 600]);
+            }
+
+        })();
+    </script>
+
+</body>
+</html>
